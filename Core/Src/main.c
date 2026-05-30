@@ -96,7 +96,7 @@ int main (void)
     SHT40_Init();
     OLED_Init();
     OLED_Clear();
-    OLED_ShowString(1, 1, "Hello, World!");
+    OLED_ShowString(1, 1, "U585 Works Well!");
     HAL_Delay(500);
     OLED_Clear();
 
