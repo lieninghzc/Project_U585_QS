@@ -11,6 +11,8 @@
 
 /* 记录初始化时的计数器值, 用于计算相对偏移 */
 static int32_t encoder_initial_count = 0;
+/* 编码器是否已初始化 */
+static uint8_t encoder_inited = 0;
 
 /**
   * @brief  启动编码器并记录初始位置
@@ -20,6 +22,9 @@ void ENCODER_Init (void)
 {
     /* 启动 TIM3 编码器模式 (双通道) */
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
+
+    /* 标记已初始化 */
+    encoder_inited = 1;
 
     /* 记录初始计数器值, 后续所有 Delta 均以此为基准 */
     encoder_initial_count = (int32_t)__HAL_TIM_GET_COUNTER(&htim3);
@@ -40,6 +45,8 @@ int32_t ENCODER_GetPosition (void)
   */
 int32_t ENCODER_GetDelta (void)
 {
+    if (!encoder_inited)
+        return 0;
     int32_t raw = encoder_initial_count - (int32_t)__HAL_TIM_GET_COUNTER(&htim3);
     return raw / 2; /* EC11 每格产生 1 个完整周期 (2边沿), ÷2 = 每格±1 */
 }

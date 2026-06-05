@@ -50,7 +50,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+static uint8_t encoder_started = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,8 +104,6 @@ int main(void)
     HAL_Delay(500);
     OLED_Clear();
 
-    ENCODER_Init();  // 启动 EC11 编码器检测 (TIM3)
-
     Heating_Set(30.0);  // 设定温度阈值为25摄氏度
   /* USER CODE END 2 */
 
@@ -116,6 +114,13 @@ int main(void)
     while (1)
     {
         TSEN_READ();
+
+        /* SHT40 首次通信成功后, 再启动 TIM3 编码器 (避免 APB1 总线竞争导致 I2C 失败) */
+        if (!encoder_started && SR == 0)
+        {
+            ENCODER_Init();
+            encoder_started = 1;
+        }
 
         OLED_Clear();
 
