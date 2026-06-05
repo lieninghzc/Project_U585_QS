@@ -798,6 +798,16 @@
               <FileType>5</FileType>
               <FilePath>..\Library\LSEN.h</FilePath>
             </File>
+            <File>
+              <FileName>SENS.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Library\SENS.c</FilePath>
+            </File>
+            <File>
+              <FileName>SENS.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Library\SENS.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

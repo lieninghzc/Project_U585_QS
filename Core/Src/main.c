@@ -30,6 +30,7 @@
 #include "Heating.h"
 #include "ENCODER.h"
 #include "LSEN.h"
+#include "SENS.h"
 #include "i2c.h"
 /* USER CODE END Includes */
 
@@ -51,7 +52,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-static uint8_t encoder_started = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -98,9 +99,7 @@ int main (void)
     MX_I2C1_Init();
     MX_TIM3_Init();
     /* USER CODE BEGIN 2 */
-    SHT40_Init();
-    BH1750_Init();
-    OLED_Init();
+    SENS_Init();
     OLED_Clear();
     OLED_ShowString(1, 1, "U585 Works Well!");
     HAL_Delay(500);
@@ -115,58 +114,53 @@ int main (void)
     //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);    // 拉低 CS
     while (1)
     {
-        TSEN_READ();
-        LSEN_READ();
-
-        /* SHT40 首次通信成功后, 再启动 TIM3 编码器 (避免 APB1 总线竞争导致 I2C 失败) */
-        if (!encoder_started && SR == 0)
-        {
-            ENCODER_Init();
-            encoder_started = 1;
-        }
+        SENS_Read();
 
         OLED_Clear();
 
         /*温控*/
         Heating_Control(temperature_c);
 
-        /* 第1行: 显示 SHT40 状态 */
-        OLED_ShowString(1, 1, "SHT40 SR=");
-        OLED_ShowHexNum(1, 10, SR, 2);
-
-        /* 第2行: 温度(保留2位小数) */
+        /* 第1行: 温度(保留2位小数) */
         int temp_int = (int)(temperature_c * 100.0f);
         if (temp_int < 0)
         {
-            OLED_ShowString(2, 1, "T:-");
+            OLED_ShowString(1, 1, "T:-");
             temp_int = -temp_int;
         }
         else
         {
-            OLED_ShowString(2, 1, "T:+");
+            OLED_ShowString(1, 1, "T:+");
         }
-        OLED_ShowNum(2, 4, temp_int / 100, 3);
-        OLED_ShowChar(2, 7, '.');
-        OLED_ShowNum(2, 8, temp_int % 100, 2);
-        OLED_ShowChar(2, 10, 'C');
+        OLED_ShowNum(1, 4, temp_int / 100, 3);
+        OLED_ShowChar(1, 7, '.');
+        OLED_ShowNum(1, 8, temp_int % 100, 2);
+        OLED_ShowChar(1, 10, 'C');
 
-        /* 第3行: 湿度(保留2位小数) */
+        /* 第2行: 湿度(保留2位小数) */
         int hum_int = (int)(humidity * 100.0f);
-        OLED_ShowString(3, 1, "H:");
-        OLED_ShowNum(3, 3, hum_int / 100, 3);
-        OLED_ShowChar(3, 6, '.');
-        OLED_ShowNum(3, 7, hum_int % 100, 2);
-        OLED_ShowChar(3, 9, '%');
+        OLED_ShowString(2, 1, "H:");
+        OLED_ShowNum(2, 3, hum_int / 100, 3);
+        OLED_ShowChar(2, 6, '.');
+        OLED_ShowNum(2, 7, hum_int % 100, 2);
+        OLED_ShowChar(2, 9, '%');
 
-        /* 第4行: BH1750 光照度 */
+        /* 第3行: BH1750 光照度 */
         {
-            OLED_ShowString(4, 1, "L:");
-            OLED_ShowNum(4, 3, (uint32_t)lux, 5);
-            OLED_ShowString(4, 9, "lx");
+            OLED_ShowString(3, 1, "L:");
+            OLED_ShowNum(3, 3, (uint32_t)lux, 5);
+            OLED_ShowString(3, 9, "lx");
             if (BH1750_SR != 0)
             {
-                OLED_ShowString(4, 12, "ER");
+                OLED_ShowString(3, 12, "ER");
             }
+        }
+
+        /* 第4行: EC11 编码器位置变化 (相对初始位置) */
+        {
+            int32_t enc_delta = ENCODER_GetDelta();
+            OLED_ShowString(4, 1, "ENC:");
+            OLED_ShowSignedNum(4, 5, enc_delta, 8);
         }
 
         HAL_Delay(1000);
