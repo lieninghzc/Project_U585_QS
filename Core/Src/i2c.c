@@ -34,13 +34,15 @@ void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 0 */
 
+  I2C_AutonomousModeConfTypeDef sConfigI2C1 = {0};
+
   /* USER CODE BEGIN I2C1_Init 1 */
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
   hi2c1.Init.Timing = 0x30909DEC;
   hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_10BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
   hi2c1.Init.OwnAddress2 = 0;
   hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
@@ -61,6 +63,16 @@ void MX_I2C1_Init(void)
   /** Configure Digital filter
   */
   if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Autonomous Mode
+  */
+  sConfigI2C1.TriggerState = I2C_AUTO_MODE_ENABLE;
+  sConfigI2C1.TriggerSelection = I2C_GRP1_GPDMA_CH0_TCF_TRG;
+  sConfigI2C1.TriggerPolarity = I2C_TRIG_POLARITY_RISING;
+  if (HAL_I2CEx_SetConfigAutonomousMode(&hi2c1, &sConfigI2C1) != HAL_OK)
   {
     Error_Handler();
   }
