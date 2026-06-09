@@ -28,6 +28,7 @@
 #include "OLED.h"
 #include "TSEN.h"
 #include "Heating.h"
+#include "Wet.h"
 #include "ENCODER.h"
 #include "LSEN.h"
 #include "SENS.h"
@@ -100,13 +101,17 @@ int main (void)
     MX_TIM3_Init();
     /* USER CODE BEGIN 2 */
     SENS_Init();
+    Heating_Init();
+    Wet_Init();
+    OLED_Init();
     OLED_Clear();
     OLED_ShowString(1, 1, "U585 Works Well!");
     HAL_Delay(500);
     OLED_Clear();
 
-    Heating_Set(30.0);  // 设定温度阈值为25摄氏度
-                        /* USER CODE END 2 */
+    Heating_Set(25.0f);  // 设定温度阈值为25摄氏度
+    Wet_Set(60.0f);      // 设定湿度阈值为60%RH
+                         /* USER CODE END 2 */
 
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
@@ -118,10 +123,15 @@ int main (void)
 
         OLED_Clear();
 
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);  // 翻转 PC13 上的 LED
+
         /*温控*/
         Heating_Control(temperature_c);
 
-        /* 第1行: 温度(保留2位小数) */
+        /*湿控*/
+        Wet_Control(humidity);
+
+        /* 第1行: 温度(保留2位小数) + 设定值 + 加热指示 */
         int temp_int = (int)(temperature_c * 100.0f);
         if (temp_int < 0)
         {
@@ -137,13 +147,43 @@ int main (void)
         OLED_ShowNum(1, 8, temp_int % 100, 2);
         OLED_ShowChar(1, 10, 'C');
 
-        /* 第2行: 湿度(保留2位小数) */
+        /* 设定值 列12-15, 加热指示 列16 */
+        {
+            float sp = Heating_GetThreshold();
+            OLED_ShowString(1, 12, "S:");
+            OLED_ShowNum(1, 14, (uint32_t)(sp + 0.5f), 2);
+            if (Heating_GetState())
+            {
+                OLED_ShowChar(1, 16, 'H'); /* H = 加热中 */
+            }
+            else
+            {
+                OLED_ShowString(1, 16, " "); /* 清掉 H */
+            }
+        }
+
+        /* 第2行: 湿度(保留2位小数) + 设定值 + 加湿指示 */
         int hum_int = (int)(humidity * 100.0f);
         OLED_ShowString(2, 1, "H:");
         OLED_ShowNum(2, 3, hum_int / 100, 3);
         OLED_ShowChar(2, 6, '.');
         OLED_ShowNum(2, 7, hum_int % 100, 2);
         OLED_ShowChar(2, 9, '%');
+
+        /* 设定值 列12-15, 加湿指示 列16 */
+        {
+            float wsp = Wet_GetThreshold();
+            OLED_ShowString(2, 12, "S:");
+            OLED_ShowNum(2, 14, (uint32_t)(wsp + 0.5f), 2);
+            if (Wet_GetState())
+            {
+                OLED_ShowChar(2, 16, 'W'); /* W = 加湿中 */
+            }
+            else
+            {
+                OLED_ShowString(2, 16, " "); /* 清掉 W */
+            }
+        }
 
         /* 第3行: BH1750 光照度 */
         {

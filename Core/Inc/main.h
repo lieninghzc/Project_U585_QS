@@ -57,6 +57,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Heating_Pin GPIO_PIN_0
+#define Heating_GPIO_Port GPIOB
+#define Wet_Pin GPIO_PIN_1
+#define Wet_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

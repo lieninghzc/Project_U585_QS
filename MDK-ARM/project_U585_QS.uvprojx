@@ -808,6 +808,16 @@
               <FileType>5</FileType>
               <FilePath>..\Library\SENS.h</FilePath>
             </File>
+            <File>
+              <FileName>Wet.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Library\Wet.c</FilePath>
+            </File>
+            <File>
+              <FileName>Wet.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Library\Wet.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
