@@ -61,6 +61,8 @@ void Error_Handler(void);
 #define Heating_GPIO_Port GPIOB
 #define Wet_Pin GPIO_PIN_1
 #define Wet_GPIO_Port GPIOB
+#define LED_Pin GPIO_PIN_7
+#define LED_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
