@@ -1016,6 +1016,16 @@
               <FileType>5</FileType>
               <FilePath>..\Library\DISPLAY.h</FilePath>
             </File>
+            <File>
+              <FileName>MENU.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Library\MENU.c</FilePath>
+            </File>
+            <File>
+              <FileName>MENU.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Library\MENU.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

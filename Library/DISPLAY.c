@@ -6,6 +6,7 @@
 #include "Wet.h"
 #include "ENCODER.h"
 #include "LED.h"
+#include "MENU.h"
 #include <string.h>
 
 /* ======================== 常量 ======================== */
@@ -197,47 +198,117 @@ static void format_line_3(void)
 }
 
 /**
-  * 行4 — 编码器增量
+  * 行4 — LED 占空比 / 目标照度
   *
-  * 格式: ENC:+    1234     (16 列)
-  *       ENC:-      42
+  * 格式: LED: 45% 1000lx    (16 列)
+  *       LED:100% 3000lx
   */
 static void format_line_4(void)
 {
     memset(line_buf, ' ', LINE_LEN);
 
-    int32_t delta = ENCODER_GetDelta();
+    uint8_t duty = LED_GetDutyCycle();
+    uint16_t tgt = LED_GetTargetLux();
     uint8_t i = 0;
 
+    line_buf[i++] = 'L';
     line_buf[i++] = 'E';
-    line_buf[i++] = 'N';
-    line_buf[i++] = 'C';
+    line_buf[i++] = 'D';
     line_buf[i++] = ':';
 
-    /* 符号位 */
-    uint32_t abs_val;
-    if (delta < 0)
+    /* 占空比 3 位 */
+    if (duty >= 100)  line_buf[i++] = '0' + duty / 100;  else line_buf[i++] = ' ';
+    if (duty >= 10)   line_buf[i++] = '0' + (duty / 10) % 10; else line_buf[i++] = ' ';
+    line_buf[i++] = '0' + duty % 10;
+    line_buf[i++] = '%';
+    line_buf[i++] = ' ';
+
+    /* 目标照度右对齐 4 位 */
+    i = 11;
+    char tbuf[4];
+    for (int d = 3; d >= 0; d--) { tbuf[d] = '0' + tgt % 10; tgt /= 10; }
+    uint8_t skip = 0;
+    while (skip < 3 && tbuf[skip] == '0') { line_buf[11 + skip] = ' '; skip++; }
+    for (uint8_t d = skip; d < 4; d++) line_buf[11 + d] = tbuf[d];
+    line_buf[15] = 'l';
+    line_buf[14] = 'x';
+
+    flush_line(3);
+}
+
+/**
+  * 休眠屏 — 简洁显示温湿度光照
+  *
+  * 格式:
+  *   T: +25.3C
+  *   H:  44.2%
+  *   L: 12345lx
+  */
+static void format_sleep_screen(void)
+{
+    memset(line_buf, ' ', LINE_LEN);
+    uint8_t i;
+
+    /* 行0: 温度 */
     {
-        line_buf[i++] = '-';
-        abs_val = (uint32_t)(-delta);
-    }
-    else
-    {
-        line_buf[i++] = '+';
-        abs_val = (uint32_t)delta;
+        int temp_int = (int)(temperature_c * 100.0f);
+        i = 0;
+        line_buf[i++] = 'T';
+        line_buf[i++] = ':';
+        line_buf[i++] = ' ';
+        if (temp_int < 0) { line_buf[i++] = '-'; temp_int = -temp_int; }
+        else               { line_buf[i++] = '+'; }
+        line_buf[i++] = '0' + (temp_int / 100) / 10;
+        line_buf[i++] = '0' + (temp_int / 100) % 10;
+        line_buf[i++] = '.';
+        line_buf[i++] = '0' + (temp_int % 100) / 10;
+        line_buf[i++] = '0' + (temp_int % 100) % 10;
+        line_buf[i++] = 'C';
+        flush_line(0);
     }
 
-    /* 8 位数字 (右对齐, 高位补空格) — 模拟 OLED_ShowSignedNum */
-    char num_str[8];
-    for (int d = 7; d >= 0; d--)
+    /* 行1: 湿度 */
     {
-        num_str[d] = '0' + abs_val % 10;
-        abs_val /= 10;
+        int hum_int = (int)(humidity * 100.0f);
+        i = 0;
+        line_buf[i++] = 'H';
+        line_buf[i++] = ':';
+        line_buf[i++] = ' ';
+        uint32_t hp = hum_int / 100;
+        if (hp >= 100) line_buf[i++] = '0' + (hp / 100) % 10;
+        else           line_buf[i++] = ' ';
+        line_buf[i++] = '0' + (hp / 10) % 10;
+        line_buf[i++] = '0' + hp % 10;
+        line_buf[i++] = '.';
+        line_buf[i++] = '0' + (hum_int % 100) / 10;
+        line_buf[i++] = '0' + (hum_int % 100) % 10;
+        line_buf[i++] = '%';
+        flush_line(1);
     }
-    uint8_t start = 0;
-    while (start < 7 && num_str[start] == '0') num_str[start++] = ' ';
-    for (uint8_t d = start; d < 8; d++) line_buf[i++] = num_str[d];
 
+    /* 行2: 光照 */
+    {
+        uint32_t lux_int = (uint32_t)lux;
+        i = 0;
+        line_buf[i++] = 'L';
+        line_buf[i++] = ':';
+        line_buf[i++] = ' ';
+        char digits[5];
+        for (int d = 4; d >= 0; d--)
+        {
+            digits[d] = '0' + lux_int % 10;
+            lux_int /= 10;
+        }
+        uint8_t start = 0;
+        while (start < 4 && digits[start] == '0') digits[start++] = ' ';
+        for (uint8_t d = start; d < 5; d++) line_buf[i++] = digits[d];
+        line_buf[i++] = 'l';
+        line_buf[i++] = 'x';
+        flush_line(2);
+    }
+
+    /* 行3: 留空 */
+    memset(line_buf, ' ', LINE_LEN);
     flush_line(3);
 }
 
@@ -266,18 +337,46 @@ void DISPLAY_Init(void)
 /**
   * @brief  刷新所有显示行
   *
-  *         需确保调用前 SENS_Read() 已执行,
-  *         各传感器数值为最新.
-  *
-  *         内部按行逐一格式化 → 对比阴影缓冲 →
-  *         仅变化字符写入 OLED.
+  *         根据 MENU 模块的显示模式:
+  *           DISP_MODE_SLEEP  → 简洁休眠屏 (T/H/L)
+  *           DISP_MODE_ACTIVE → 完整详细显示 + 参数高亮
   */
 void DISPLAY_Update(void)
 {
-    format_line_1();
-    format_line_2();
-    format_line_3();
-    format_line_4();
+    if (MENU_GetDisplayMode() == DISP_MODE_SLEEP)
+    {
+        format_sleep_screen();
+    }
+    else
+    {
+        MENU_Param_t sel = MENU_GetSelectedParam();
+
+        format_line_1();
+        /* 选中温度设定或加热开关 → 行1末列显示 '*' */
+        if (sel == MENU_PARAM_TEMP_SET || sel == MENU_PARAM_HEAT_SWITCH)
+        {
+            shadow[0][15] = '*';
+            OLED_ShowChar(1, 16, '*');
+        }
+
+        format_line_2();
+        /* 选中湿度设定或加湿开关 → 行2列15显示 '*' */
+        if (sel == MENU_PARAM_HUM_SET || sel == MENU_PARAM_HUM_SWITCH)
+        {
+            shadow[1][14] = '*';
+            OLED_ShowChar(2, 15, '*');
+        }
+
+        format_line_3();
+        /* 选中LED目标或LED开关 → 行3末列显示 '*' */
+        if (sel == MENU_PARAM_LED_TARGET || sel == MENU_PARAM_LED_SWITCH)
+        {
+            shadow[2][15] = '*';
+            OLED_ShowChar(3, 16, '*');
+        }
+
+        format_line_4();
+    }
 }
 
 /**

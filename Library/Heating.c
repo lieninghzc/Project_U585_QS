@@ -5,12 +5,12 @@
 static float temperature_threshold = 25.0f; /* 设定温度阈值 */
 static uint8_t heating_state = 0;           /* 0=关闭, 1=加热中 */
 
-/* 初始化加热控制引脚 PB0 */
+/* 初始化加热控制引脚 PB0 (低电平有效: 0V=加热, 3.3V=关闭) */
 void Heating_Init (void)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-    /* PB0 推挽输出, 初始高电平(关闭加热, 低电平有效) */
+    /* PB0 推挽输出, 初始高电平(关闭加热, 3.3V=关) */
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 
     GPIO_InitStruct.Pin = GPIO_PIN_0;
@@ -28,13 +28,13 @@ void Heating_Set (float temperature)
 void Heating_ON (void)
 {
     heating_state = 1;
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);  /* 低电平有效 */
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);   /* 0V = 加热 */
 }
 
 void Heating_OFF (void)
 {
     heating_state = 0;
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);    /* 高电平关闭 */
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);     /* 3.3V = 关闭 */
 }
 
 void Heating_Control (float current_temperature)

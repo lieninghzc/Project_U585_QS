@@ -37,6 +37,7 @@
 #include "Wet.h"
 #include "LED.h"
 #include "DISPLAY.h"
+#include "MENU.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -115,6 +116,8 @@ int main (void)
     LED_Init();             // LED PWM 初始化
     LED_SetTargetLux(1000);  // 设定目标照度 1000 lux
 
+    MENU_Init();   // 菜单初始化 (PB5 按键)
+
     VOICE_Init();  // 语音模块初始化 (UART4 中断接收模式)
                    /* USER CODE END 2 */
 
@@ -137,6 +140,9 @@ int main (void)
 
         /* OLED 显示刷新 (含阴影缓存, 仅更新变化字符) */
         DISPLAY_Update();
+
+        /* 菜单任务 (按键/编码器检测 + 休眠管理) */
+        MENU_Task();
 
         /* 语音指令处理 (非阻塞, 每 ~300ms 自动轮询 ASRPRO) */
         VOICE_Process();
