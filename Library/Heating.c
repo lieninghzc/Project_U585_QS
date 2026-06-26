@@ -10,12 +10,12 @@ void Heating_Init (void)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-    /* PB0 推挽输出, 初始低电平(关闭加热) */
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+    /* PB0 推挽输出, 初始高电平(关闭加热, 低电平有效) */
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 
     GPIO_InitStruct.Pin = GPIO_PIN_0;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
@@ -28,17 +28,20 @@ void Heating_Set (float temperature)
 void Heating_ON (void)
 {
     heating_state = 1;
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);  /* 低电平有效 */
 }
 
 void Heating_OFF (void)
 {
     heating_state = 0;
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);    /* 高电平关闭 */
 }
 
 void Heating_Control (float current_temperature)
 {
+    extern uint8_t voice_manual_mode;
+    if (voice_manual_mode) return;  /* 手动模式, 不自动干预 */
+
     /* 滞回控制: 低于阈值0.5°C开启, 距阈值0.1°C提前关闭 (利用热惯性) */
     if (temperature_threshold - 0.5f > current_temperature)
     {

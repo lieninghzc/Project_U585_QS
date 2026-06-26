@@ -39,6 +39,9 @@ void Wet_OFF (void)
 
 void Wet_Control (float current_humidity)
 {
+    extern uint8_t voice_manual_mode;
+    if (voice_manual_mode) return;  /* 手动模式, 不自动干预 */
+
     /* 滞回控制: 低于阈值10%RH开启, 距阈值3%RH提前关闭 (利用湿惯性) */
     if (humidity_threshold - 10.0f > current_humidity)
     {
