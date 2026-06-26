@@ -37,6 +37,7 @@ static uint8_t      btn_prev = 1;
 static uint8_t      btn_pressed = 0;
 
 static int32_t      enc_accum = 0;
+static uint8_t      off_mode = 0;        /* 0=自动, 1=全部关闭 */
 
 /* ======================== 初始化 ======================== */
 
@@ -56,6 +57,7 @@ void MENU_Init(void)
     btn_prev       = 1;
     btn_pressed    = 0;
     enc_accum      = 0;
+    off_mode       = 0;
 }
 
 /* ======================== 查询函数 ======================== */
@@ -73,6 +75,11 @@ MENU_Param_t MENU_GetSelectedParam(void)
 uint8_t MENU_IsAdjusting(void)
 {
     return (display_mode == DISP_MODE_ACTIVE && selected_param != MENU_PARAM_NONE);
+}
+
+uint8_t MENU_IsOffMode(void)
+{
+    return off_mode;
 }
 
 /* ======================== 参数调节 ======================== */
@@ -110,22 +117,24 @@ static void adjust_parameter(int8_t direction)
         LED_SetTargetLux((uint16_t)new_val);
         break;
     }
-    /* 开关类: 编码器旋转即切换 ON/OFF */
-    case MENU_PARAM_HEAT_SWITCH:
-        voice_manual_mode = 1;
-        if (direction > 0) Heating_ON();
-        else               Heating_OFF();
-        break;
-
-    case MENU_PARAM_HUM_SWITCH:
-        voice_manual_mode = 1;
-        if (direction > 0) Wet_ON();
-        else               Wet_OFF();
-        break;
-
-    case MENU_PARAM_LED_SWITCH:
-        if (direction > 0) LED_ResumeAuto();
-        else               LED_ForceOff();
+    /* 模式切换: 自动/关闭 */
+    case MENU_PARAM_MODE_SWITCH:
+        if (direction > 0)
+        {
+            /* → 自动模式: LED恢复PI, 温湿度恢复自动滞回 */
+            LED_ResumeAuto();
+            voice_manual_mode = 0;
+            off_mode = 0;
+        }
+        else
+        {
+            /* → 关闭模式: 全部关闭 */
+            Heating_OFF();
+            Wet_OFF();
+            LED_ForceOff();
+            voice_manual_mode = 1;
+            off_mode = 1;
+        }
         break;
 
     default:
@@ -142,10 +151,8 @@ static void cycle_selection(void)
     case MENU_PARAM_NONE:         selected_param = MENU_PARAM_TEMP_SET;    break;
     case MENU_PARAM_TEMP_SET:     selected_param = MENU_PARAM_HUM_SET;     break;
     case MENU_PARAM_HUM_SET:      selected_param = MENU_PARAM_LED_TARGET;  break;
-    case MENU_PARAM_LED_TARGET:   selected_param = MENU_PARAM_HEAT_SWITCH; break;
-    case MENU_PARAM_HEAT_SWITCH:  selected_param = MENU_PARAM_HUM_SWITCH;  break;
-    case MENU_PARAM_HUM_SWITCH:   selected_param = MENU_PARAM_LED_SWITCH;  break;
-    case MENU_PARAM_LED_SWITCH:   selected_param = MENU_PARAM_NONE;        break;
+    case MENU_PARAM_LED_TARGET:   selected_param = MENU_PARAM_MODE_SWITCH; break;
+    case MENU_PARAM_MODE_SWITCH:  selected_param = MENU_PARAM_NONE;        break;
     }
 }
 

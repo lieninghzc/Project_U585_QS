@@ -198,40 +198,37 @@ static void format_line_3(void)
 }
 
 /**
-  * 行4 — LED 占空比 / 目标照度
+  * 行4 — 系统模式 (自动/关闭)
   *
-  * 格式: LED: 45% 1000lx    (16 列)
-  *       LED:100% 3000lx
+  * 格式: MODE: AUTO       (16 列)
+  *       MODE: OFF
   */
 static void format_line_4(void)
 {
     memset(line_buf, ' ', LINE_LEN);
 
-    uint8_t duty = LED_GetDutyCycle();
-    uint16_t tgt = LED_GetTargetLux();
+    uint8_t off = MENU_IsOffMode();
     uint8_t i = 0;
 
-    line_buf[i++] = 'L';
-    line_buf[i++] = 'E';
+    line_buf[i++] = 'M';
+    line_buf[i++] = 'O';
     line_buf[i++] = 'D';
+    line_buf[i++] = 'E';
     line_buf[i++] = ':';
-
-    /* 占空比 3 位 */
-    if (duty >= 100)  line_buf[i++] = '0' + duty / 100;  else line_buf[i++] = ' ';
-    if (duty >= 10)   line_buf[i++] = '0' + (duty / 10) % 10; else line_buf[i++] = ' ';
-    line_buf[i++] = '0' + duty % 10;
-    line_buf[i++] = '%';
     line_buf[i++] = ' ';
-
-    /* 目标照度右对齐 4 位 */
-    i = 11;
-    char tbuf[4];
-    for (int d = 3; d >= 0; d--) { tbuf[d] = '0' + tgt % 10; tgt /= 10; }
-    uint8_t skip = 0;
-    while (skip < 3 && tbuf[skip] == '0') { line_buf[11 + skip] = ' '; skip++; }
-    for (uint8_t d = skip; d < 4; d++) line_buf[11 + d] = tbuf[d];
-    line_buf[15] = 'l';
-    line_buf[14] = 'x';
+    if (off)
+    {
+        line_buf[i++] = 'O';
+        line_buf[i++] = 'F';
+        line_buf[i++] = 'F';
+    }
+    else
+    {
+        line_buf[i++] = 'A';
+        line_buf[i++] = 'U';
+        line_buf[i++] = 'T';
+        line_buf[i++] = 'O';
+    }
 
     flush_line(3);
 }
@@ -352,30 +349,32 @@ void DISPLAY_Update(void)
         MENU_Param_t sel = MENU_GetSelectedParam();
 
         format_line_1();
-        /* 选中温度设定或加热开关 → 行1末列显示 '*' */
-        if (sel == MENU_PARAM_TEMP_SET || sel == MENU_PARAM_HEAT_SWITCH)
+        if (sel == MENU_PARAM_TEMP_SET)
         {
             shadow[0][15] = '*';
             OLED_ShowChar(1, 16, '*');
         }
 
         format_line_2();
-        /* 选中湿度设定或加湿开关 → 行2列15显示 '*' */
-        if (sel == MENU_PARAM_HUM_SET || sel == MENU_PARAM_HUM_SWITCH)
+        if (sel == MENU_PARAM_HUM_SET)
         {
             shadow[1][14] = '*';
             OLED_ShowChar(2, 15, '*');
         }
 
         format_line_3();
-        /* 选中LED目标或LED开关 → 行3末列显示 '*' */
-        if (sel == MENU_PARAM_LED_TARGET || sel == MENU_PARAM_LED_SWITCH)
+        if (sel == MENU_PARAM_LED_TARGET)
         {
             shadow[2][15] = '*';
             OLED_ShowChar(3, 16, '*');
         }
 
         format_line_4();
+        if (sel == MENU_PARAM_MODE_SWITCH)
+        {
+            shadow[3][15] = '*';
+            OLED_ShowChar(4, 16, '*');
+        }
     }
 }
 

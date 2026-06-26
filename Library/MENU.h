@@ -17,9 +17,7 @@ typedef enum {
     MENU_PARAM_TEMP_SET     = 1,   /* 温度设定值 */
     MENU_PARAM_HUM_SET      = 2,   /* 湿度设定值 */
     MENU_PARAM_LED_TARGET   = 3,   /* LED 目标照度 */
-    MENU_PARAM_HEAT_SWITCH  = 4,   /* 加热开关 (编码器切换) */
-    MENU_PARAM_HUM_SWITCH   = 5,   /* 加湿开关 (编码器切换) */
-    MENU_PARAM_LED_SWITCH   = 6,   /* LED 开关 (编码器切换) */
+    MENU_PARAM_MODE_SWITCH  = 4,   /* 模式切换: 自动/关闭 */
 } MENU_Param_t;
 
 /* ======================== 函数接口 ======================== */
@@ -56,5 +54,12 @@ MENU_Param_t MENU_GetSelectedParam(void);
   * @retval 1=有参数被选中待调节, 0=无
   */
 uint8_t MENU_IsAdjusting(void);
+
+/**
+  * @brief  获取系统当前模式
+  * @retval 0=自动模式 (加热/加湿/LED自动调节)
+  *         1=关闭模式 (全部关闭)
+  */
+uint8_t MENU_IsOffMode(void);
 
 #endif /* __MENU_H */

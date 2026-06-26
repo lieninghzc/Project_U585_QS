@@ -14,7 +14,7 @@
 
 #define LED_KP          1.2f     /* 比例增益 (输出单位: 0.1% duty)          */
 #define LED_KI          0.03f    /* 积分增益 (消除静差)                     */
-#define LED_DEADBAND    15       /* 死区 (lux) — 偏差≤15lux 时不调节, 足够收敛 */
+#define LED_DEADBAND    50       /* 死区 (lux) — 偏差≤50lux 时不调节, 防末端震荡 */
 #define LED_DUTY_MIN    0        /* 最小占空比 (0.1% 单位)      0%          */
 #define LED_DUTY_MAX    1000     /* 最大占空比 (0.1% 单位)    100.0%        */
 #define LED_I_LIMIT     10000    /* 积分限幅, 防饱和恢复过慢                */
