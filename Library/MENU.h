@@ -34,7 +34,7 @@ void MENU_Init(void);
   *           - 按键检测 (PB5, 下降沿触发)
   *           - 编码器旋转检测
   *           - 休眠/激活状态切换
-  *           - 3 分钟空闲超时自动休眠
+  *           - 1 分钟空闲超时自动休眠
   *           - 参数循环选择与调节
   */
 void MENU_Task(void);
@@ -61,5 +61,13 @@ uint8_t MENU_IsAdjusting(void);
   *         1=关闭模式 (全部关闭)
   */
 uint8_t MENU_IsOffMode(void);
+
+/**
+  * @brief  设置系统模式 (用于 Flash 恢复)
+  * @param  mode  0=自动模式, 1=关闭模式
+  * @note   仅在 FlashEE_Init 恢复已保存配置时调用,
+  *         会同时设置 voice_manual_mode 并关闭/恢复输出。
+  */
+void MENU_SetOffMode(uint8_t mode);
 
 #endif /* __MENU_H */

@@ -1026,6 +1026,16 @@
               <FileType>5</FileType>
               <FilePath>..\Library\MENU.h</FilePath>
             </File>
+            <File>
+              <FileName>FLASH_EEPROM.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Library\FLASH_EEPROM.c</FilePath>
+            </File>
+            <File>
+              <FileName>FLASH_EEPROM.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Library\FLASH_EEPROM.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

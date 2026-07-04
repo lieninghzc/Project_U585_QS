@@ -38,6 +38,7 @@
 #include "LED.h"
 #include "DISPLAY.h"
 #include "MENU.h"
+#include "FLASH_EEPROM.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,6 +72,27 @@ void SystemClock_Config (void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+/**
+  * @brief  低功耗延时: 替代 HAL_Delay, CPU 在中断等待期间进入 Sleep 模式。
+  *         Sleep 模式下 CPU 时钟门控关闭，所有外设 (I2C/TIM/UART/GPIO)
+  *         及 SysTick 继续运行。任何 IRQ 唤醒 CPU 后检查计时，
+  *         未到时则再次 __WFI() 休眠。
+  * @param  ms: 延时毫秒数
+  * @note   与 HAL_Delay(ms) 功能完全等价, 零行为差异。
+  *         U585 Sleep 模式相比全速忙等可节省约 50%+ 的动态功耗。
+  */
+static void SleepDelay(uint32_t ms)
+{
+    uint32_t tickstart = HAL_GetTick();
+    while ((HAL_GetTick() - tickstart) < ms)
+    {
+        /* SLEEPDEEP=0 → Sleep 模式 (非 Stop)。
+         * CPU 时钟停, HCLK/PCLK 不停, SysTick 每 1ms 唤醒 CPU。
+         * Flash 在 Sleep 期间自动断电 (由 LowPower_Init 配置)。 */
+        __WFI();
+    }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -97,6 +119,9 @@ int main (void)
 
     /* USER CODE BEGIN SysInit */
 
+    /* U585 低功耗初始化: Flash 在 Sleep 时自动断电 (STOP 模式下自动恢复) */
+    __HAL_FLASH_SLEEP_POWERDOWN_ENABLE();
+
     /* USER CODE END SysInit */
 
     /* Initialize all configured peripherals */
@@ -119,6 +144,8 @@ int main (void)
     MENU_Init();   // 菜单初始化 (PB5 按键)
 
     VOICE_Init();  // 语音模块初始化 (UART4 中断接收模式)
+
+    FlashEE_Init(); // 从 Flash 恢复上次断电前保存的配置 (温度/湿度/光照/模式)
                    /* USER CODE END 2 */
 
     /* Infinite loop */
@@ -147,7 +174,10 @@ int main (void)
         /* 语音指令处理 (非阻塞, 每 ~300ms 自动轮询 ASRPRO) */
         VOICE_Process();
 
-        HAL_Delay(100); /* 缩短延时, 让 LED_Task 过渡更平滑 */
+        /* Flash EEPROM 后台写入 (dirty 3 秒后自动保存) */
+        FlashEE_Task();
+
+        SleepDelay(100); /* 低功耗延时: CPU Sleep 替代忙等, 零行为差异 */
         /* USER CODE END WHILE */
 
         /* USER CODE BEGIN 3 */

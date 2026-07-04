@@ -4,6 +4,7 @@
 #include "Wet.h"
 #include "LED.h"
 #include "VOICE.h"
+#include "FLASH_EEPROM.h"
 #include "gpio.h"
 
 /* ======================== 硬件引脚 ======================== */
@@ -13,9 +14,9 @@
 
 /* ======================== 超时参数 ======================== */
 
-#define IDLE_TIMEOUT_MS     180000   /* 3 分钟无操作 → 休眠 */
+#define IDLE_TIMEOUT_MS     60000    /* 1 分钟无操作 → 休眠 */
 #define LOOP_MS             100
-#define IDLE_TIMEOUT_LOOPS  (IDLE_TIMEOUT_MS / LOOP_MS)  /* 1800 */
+#define IDLE_TIMEOUT_LOOPS  (IDLE_TIMEOUT_MS / LOOP_MS)  /* 600 */
 
 /* ======================== 按键灵敏度 ======================== */
 
@@ -82,6 +83,25 @@ uint8_t MENU_IsOffMode(void)
     return off_mode;
 }
 
+void MENU_SetOffMode(uint8_t mode)
+{
+    off_mode = mode;
+    if (mode)
+    {
+        /* 关闭模式: 全部关闭 */
+        Heating_OFF();
+        Wet_OFF();
+        LED_ForceOff();
+        voice_manual_mode = 1;
+    }
+    else
+    {
+        /* 自动模式: 恢复自动控制 */
+        LED_ResumeAuto();
+        voice_manual_mode = 0;
+    }
+}
+
 /* ======================== 参数调节 ======================== */
 
 static void adjust_parameter(int8_t direction)
@@ -140,6 +160,9 @@ static void adjust_parameter(int8_t direction)
     default:
         break;
     }
+
+    /* 参数已变更 → 标记需保存到 Flash */
+    FlashEE_MarkDirty();
 }
 
 /* ======================== 参数循环 ======================== */
@@ -222,6 +245,9 @@ void MENU_Task(void)
                 display_mode   = DISP_MODE_SLEEP;
                 selected_param = MENU_PARAM_NONE;
                 idle_counter   = 0;
+
+                /* 进入休眠前保存配置到 Flash */
+                FlashEE_Save();
             }
         }
     }
